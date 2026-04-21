@@ -5,7 +5,13 @@ class RobokassaHttpResponse {
   final String body;
   final int statusCode;
 
-  const RobokassaHttpResponse({required this.body, required this.statusCode});
+  final Map<String, String> headers;
+
+  RobokassaHttpResponse({
+    required this.body,
+    required this.statusCode,
+    Map<String, String>? headers,
+  }) : headers = headers ?? const {};
 }
 
 abstract class RobokassaHttpClient {
@@ -18,6 +24,7 @@ abstract class RobokassaHttpClient {
     String url, {
     required Object body,
     Map<String, String>? headers,
+    bool followRedirects = true,
   });
 }
 
@@ -53,6 +60,7 @@ class DioRobokassaHttpClient implements RobokassaHttpClient {
       return RobokassaHttpResponse(
         body: response.data ?? '',
         statusCode: response.statusCode ?? 0,
+        headers: _headersFromDio(response.headers),
       );
     } on DioException catch (e) {
       throw RobokassaException('HTTP GET failed: ${e.message}', e);
@@ -64,6 +72,7 @@ class DioRobokassaHttpClient implements RobokassaHttpClient {
     String url, {
     required Object body,
     Map<String, String>? headers,
+    bool followRedirects = true,
   }) async {
     try {
       final response = await _dio.postUri<String>(
@@ -73,14 +82,26 @@ class DioRobokassaHttpClient implements RobokassaHttpClient {
           headers: headers,
           responseType: ResponseType.plain,
           validateStatus: (_) => true,
+          followRedirects: followRedirects,
         ),
       );
       return RobokassaHttpResponse(
         body: response.data ?? '',
         statusCode: response.statusCode ?? 0,
+        headers: _headersFromDio(response.headers),
       );
     } on DioException catch (e) {
       throw RobokassaException('HTTP POST failed: ${e.message}', e);
     }
+  }
+
+  static Map<String, String> _headersFromDio(Headers h) {
+    final out = <String, String>{};
+    h.forEach((name, values) {
+      if (values.isNotEmpty) {
+        out[name.toLowerCase()] = values.join(',');
+      }
+    });
+    return out;
   }
 }

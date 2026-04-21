@@ -1,33 +1,28 @@
 import 'package:robokassa_dart/src/exceptions.dart';
 
-import 'curl_payment_target.dart';
 import 'receipt.dart';
 
-class CurlPaymentRequest {
+class RecurringPaymentRequest {
+  final int invoiceId;
+
+  final int previousInvoiceId;
+
   final num outSum;
-  final int? invoiceId;
   final String description;
   final String culture;
   final String? email;
-  final String? incCurrLabel;
   final Receipt? receipt;
   final Map<String, String> shpParams;
 
-  final bool recurring;
-
-  final CurlPaymentTarget target;
-
-  const CurlPaymentRequest({
+  const RecurringPaymentRequest({
+    required this.invoiceId,
+    required this.previousInvoiceId,
     required this.outSum,
     required this.description,
-    this.invoiceId,
     this.culture = 'ru',
     this.email,
-    this.incCurrLabel,
     this.receipt,
     this.shpParams = const {},
-    this.recurring = false,
-    this.target = CurlPaymentTarget.indexJson,
   });
 
   void validate() {
@@ -36,6 +31,12 @@ class CurlPaymentRequest {
     }
     if (outSum <= 0) {
       throw const RobokassaException('OutSum must be greater than zero');
+    }
+    if (invoiceId <= 0) {
+      throw const RobokassaException('invoiceId must be a positive merchant-generated id');
+    }
+    if (previousInvoiceId <= 0) {
+      throw const RobokassaException('previousInvoiceId must be positive');
     }
   }
 }

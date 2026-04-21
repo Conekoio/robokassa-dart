@@ -4,6 +4,8 @@ import 'signature/hash_type.dart';
 class RobokassaEndpoints {
   final String paymentUrl;
   final String paymentCurl;
+  final String indexClassicUrl;
+  final String recurringUrl;
   final String jwtApiUrl;
   final String webServiceUrl;
   final String invoiceInformationUrl;
@@ -13,6 +15,8 @@ class RobokassaEndpoints {
   const RobokassaEndpoints({
     this.paymentUrl = 'https://auth.robokassa.ru/Merchant/Index/',
     this.paymentCurl = 'https://auth.robokassa.ru/Merchant/Indexjson.aspx',
+    this.indexClassicUrl = 'https://auth.robokassa.ru/Merchant/Index.aspx',
+    this.recurringUrl = 'https://auth.robokassa.ru/Merchant/Recurring',
     this.jwtApiUrl = 'https://services.robokassa.ru/InvoiceServiceWebApi/api/CreateInvoice',
     this.webServiceUrl = 'https://auth.robokassa.ru/Merchant/WebService/Service.asmx',
     this.invoiceInformationUrl = 'https://services.robokassa.ru/InvoiceServiceWebApi/api/GetInvoiceInformationList',

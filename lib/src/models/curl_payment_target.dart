@@ -1,0 +1,4 @@
+enum CurlPaymentTarget {
+  indexJson,
+  indexClassic,
+}

@@ -1,7 +1,7 @@
 # robokassa_dart
 
 SDK для интеграции с платёжной системой **Robokassa** на Dart.
-Позволяет создавать платёжные ссылки (включая JWT-интерфейс), проверять статус платежа, получать доступные способы оплаты и работать с фискальными чеками.
+Позволяет создавать платёжные ссылки (включая JWT-интерфейс), **рекуррентные списания** (`/Merchant/Recurring`), проверять статус платежа, получать доступные способы оплаты и работать с фискальными чеками.
 
 HTTP-транспорт — **Dio** (можно заменить на любой другой через `RobokassaHttpClient`).
 Пакет не читает секреты самостоятельно: логин и пароли передаются только через `RobokassaConfig`.
@@ -12,7 +12,7 @@ HTTP-транспорт — **Dio** (можно заменить на любой
 
 ```yaml
 dependencies:
-  robokassa_dart: ^0.1.0
+  robokassa_dart: ^0.2.0
 ```
 
 и выполните `dart pub get` (или `flutter pub get`).
@@ -96,7 +96,15 @@ const config = RobokassaConfig(
 | Сервис                           | Метод                                                | Описание                                               |
 | -------------------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
 | `robokassa.payment.sendJwt`      | `Future<String>`                                     | Рекомендуемый способ, возвращает ссылку на оплату.     |
-| `robokassa.payment.sendCurl`     | `Future<String>`                                     | Создание ссылки через `Indexjson.aspx`.                |
+| `robokassa.payment.sendCurl`     | `Future<String>`                                     | Создание ссылки через `Indexjson.aspx` или классический `Index.aspx` ([CurlPaymentTarget]). |
+| `robokassa.payment.sendRecurringChild` | `Future<RecurringPaymentResult>`                 | Дочерний рекуррентный платёж (`PreviousInvoiceID`), см. [доку](https://docs.robokassa.ru/ru/recurring-payments). |
+
+### Рекуррентные платежи (самостоятельная интеграция)
+
+1. **Согласовать** услугу с Robokassa (иначе ошибки вида «рекуррент не разрешён»).
+2. **Первый (материнский) платёж** — `sendCurl` с `recurring: true` и `target: CurlPaymentTarget.indexClassic` (как в официальной форме на `Merchant/Index.aspx`); в ответе ожидается редирект с `Location` на страницу оплаты.
+3. **Повторные списания** — `sendRecurringChild(RecurringPaymentRequest(...))`; в подпись входит только **новый** `invoiceId`, не `previousInvoiceId`. Ответ `OK+…` означает создание операции — финальный статус смотрите по Result URL / `OpState`.
+
 | `robokassa.webService.getPaymentMethods` | `Future<Map<String, Object?>>`               | Список доступных способов оплаты.                      |
 | `robokassa.webService.opState`   | `Future<Map<String, Object?>>`                       | Состояние оплаты по `InvoiceID` (`OpStateExt`).        |
 | `robokassa.status.getInvoiceInformationList` | `Future<Map<String, Object?>>`           | Список выставленных счетов с фильтрами.                |
@@ -120,6 +128,7 @@ class MyHttpClient implements RobokassaHttpClient {
     String url, {
     required Object body,
     Map<String, String>? headers,
+    bool followRedirects = true,
   }) {
     // ...
   }
@@ -127,6 +136,8 @@ class MyHttpClient implements RobokassaHttpClient {
 
 final robokassa = Robokassa(config, httpClient: MyHttpClient());
 ```
+
+Своя реализация должна прокидывать `followRedirects` в нижележащий клиент и заполнять `RobokassaHttpResponse.headers` (в т.ч. `location` при `followRedirects: false` для классического `Index.aspx`).
 
 Кастомный `Dio` можно пробросить в существующую реализацию:
 
@@ -151,6 +162,7 @@ final robokassa = Robokassa(
 
 ```bash
 dart run example/send_payment_jwt.dart
+dart run example/send_recurring_child.dart
 ```
 
 ## Лицензия
